@@ -8,8 +8,9 @@ import (
 	"net/http"
 )
 
+// ABI is an interface for fetching contract ABIs
 type ABI interface {
-	GetContractABI(ctx context.Context, address string) ([]ContractABI, error)
+	GetContractABI(ctx context.Context, address string) (ContractABIs, error)
 }
 
 type etherscanABI struct {
@@ -17,7 +18,8 @@ type etherscanABI struct {
 	apiKey     string
 }
 
-func (e *etherscanABI) GetContractABI(ctx context.Context, address string) ([]ContractABI, error) {
+// GetContractABI fetches the ABI for a given contract address from the Etherscan API
+func (e *etherscanABI) GetContractABI(ctx context.Context, address string) (ContractABIs, error) {
 	url := fmt.Sprintf("%s/api?module=contract&action=getabi&address=%s&apikey=%s", e.apiBaseURL, address, e.apiKey)
 
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
@@ -50,7 +52,7 @@ func (e *etherscanABI) GetContractABI(ctx context.Context, address string) ([]Co
 		return nil, fmt.Errorf("API error: %s", apiResp.Message)
 	}
 
-	var contractABIs []ContractABI
+	var contractABIs ContractABIs
 	if err := json.Unmarshal([]byte(apiResp.Result), &contractABIs); err != nil {
 		return nil, fmt.Errorf("failed to unmarshal contract ABIs: %w", err)
 	}
@@ -58,6 +60,7 @@ func (e *etherscanABI) GetContractABI(ctx context.Context, address string) ([]Co
 	return contractABIs, nil
 }
 
+// NewABIClient creates a new ABI client
 func NewABIClient(apiBaseURL, apiKey string) ABI {
 	return &etherscanABI{
 		apiBaseURL: apiBaseURL,
